@@ -69,15 +69,13 @@ public final class Falcon500SteerControllerFactoryBuilder {
         return Double.isFinite(currentLimit);
     }
 
-    public <T> SteerControllerFactory<ControllerImplementation, SteerConfiguration<T>> build(AbsoluteEncoderFactory<T> absoluteEncoderFactory) {
-        return new FactoryImplementation<>(absoluteEncoderFactory);
+    public SteerControllerFactory<ControllerImplementation, SteerConfiguration> build() {
+        return new FactoryImplementation();
     }
 
-    private class FactoryImplementation<T> implements SteerControllerFactory<ControllerImplementation, SteerConfiguration<T>> {
-        private final AbsoluteEncoderFactory<T> encoderFactory;
+    private class FactoryImplementation implements SteerControllerFactory<ControllerImplementation, SteerConfiguration> {
 
-        private FactoryImplementation(AbsoluteEncoderFactory<T> encoderFactory) {
-            this.encoderFactory = encoderFactory;
+        private FactoryImplementation() {
         }
 
         @Override
@@ -87,8 +85,8 @@ public final class Falcon500SteerControllerFactoryBuilder {
         }
 
         @Override
-        public ControllerImplementation create(SteerConfiguration<T> steerConfiguration, String canbus, MechanicalConfiguration mechConfiguration) {
-            AbsoluteEncoder absoluteEncoder = encoderFactory.create(steerConfiguration.getEncoderConfiguration());
+        public ControllerImplementation create(SteerConfiguration steerConfiguration, String canbus, MechanicalConfiguration mechConfiguration) {
+            AbsoluteEncoder absoluteEncoder = steerConfiguration.getEncoderConfiguration().create();
 
             final double sensorPositionCoefficient = 2.0 * Math.PI / TICKS_PER_ROTATION * mechConfiguration.getSteerReduction();
             final double sensorVelocityCoefficient = sensorPositionCoefficient * 10.0;

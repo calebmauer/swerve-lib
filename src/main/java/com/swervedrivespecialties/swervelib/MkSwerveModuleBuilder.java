@@ -14,16 +14,14 @@ public class MkSwerveModuleBuilder {
                 .build();
     }
 
-    private static SteerControllerFactory<?, SteerConfiguration<CanCoderAbsoluteConfiguration>> getFalcon500SteerFactory(MkModuleConfiguration configuration) {
+    private static SteerControllerFactory<?, SteerConfiguration> getFalcon500SteerFactory(MkModuleConfiguration configuration) {
         return new Falcon500SteerControllerFactoryBuilder()
                 .withVoltageCompensation(configuration.getNominalVoltage())
                 .withPidConstants(configuration.getSteerKP(), configuration.getSteerKI(), configuration.getSteerKD())
                 .withMotionMagic(configuration.getSteerMMkV(), configuration.getSteerMMkA(),
                         configuration.getSteerMMkS())
                 .withCurrentLimit(configuration.getSteerCurrentLimit())
-                .build(new CanCoderFactoryBuilder()
-                        .withReadingUpdatePeriod(100)
-                        .build());
+                .build();
     }
 
     private static DriveControllerFactory<?, Integer> getNeoDriveFactory(MkModuleConfiguration configuration) {
@@ -33,14 +31,12 @@ public class MkSwerveModuleBuilder {
                 .build();
     }
 
-    private static SteerControllerFactory<?, SteerConfiguration<CanCoderAbsoluteConfiguration>> getNeoSteerFactory(MkModuleConfiguration configuration) {
+    private static SteerControllerFactory<?, SteerConfiguration> getNeoSteerFactory(MkModuleConfiguration configuration) {
         return new NeoSteerControllerFactoryBuilder()
                 .withVoltageCompensation(configuration.getNominalVoltage())
                 .withPidConstants(configuration.getSteerKP(), configuration.getSteerKI(), configuration.getSteerKD())
                 .withCurrentLimit(configuration.getSteerCurrentLimit())
-                .build(new CanCoderFactoryBuilder()
-                        .withReadingUpdatePeriod(100)
-                        .build());
+                .build();
     }
 
     private final MkModuleConfiguration configuration;
@@ -49,7 +45,7 @@ public class MkSwerveModuleBuilder {
     private MechanicalConfiguration mechConfig = null;
 
     private DriveControllerFactory<?, Integer> driveFactory = null;
-    private SteerControllerFactory<?, SteerConfiguration<CanCoderAbsoluteConfiguration>> steerFactory = null;
+    private SteerControllerFactory<?, SteerConfiguration> steerFactory = null;
 
     private int driveMotorPort = -1;
     private String driveCanbus = "";
@@ -57,6 +53,7 @@ public class MkSwerveModuleBuilder {
     private String steerCanbus = "";
 
     private MotorType steerMotorType;
+    private EncoderType steerEncoderType = EncoderType.CANCoder;
     private int steerEncoderPort = -1;
     private double steerOffset = 0;
     private String steerEncoderCanbus = "";
@@ -189,13 +186,15 @@ public class MkSwerveModuleBuilder {
     }
 
     /**
-     * Specify details about the module's absolute encoder.
+     * Specify details about the module's absolute encoder. Tells the module to
+     * get the steer angle via a CANCoder. 
      * 
      * @param encoderPort the CAN ID of the encoder
      * @param canbus the canbus of the encoder, "" for the roboRIO bus
      * @return the builder
      */
     public MkSwerveModuleBuilder withSteerEncoderPort(int encoderPort, String canbus) {
+        this.steerEncoderType = EncoderType.CANCoder;
         this.steerEncoderPort = encoderPort;
         this.steerEncoderCanbus = canbus;
         return this;
@@ -203,13 +202,26 @@ public class MkSwerveModuleBuilder {
 
     /**
      * Specify details about the module's absolute encoder. The encoder must 
-     * be on the roboRIO canbus.
+     * be on the roboRIO canbus. Tells the module to get the steer angle via a CANCoder. 
      * 
      * @param encoderPort the CAN ID of the encoer
      * @return the builder
      */
     public MkSwerveModuleBuilder withSteerEncoderPort(int encoderPort) {
         return this.withSteerEncoderPort(encoderPort, "");
+    }
+
+    /**
+     * Specify details about the module's absolute encoder. Tells the module
+     * to get the steer angle via an encoder connected to an analog channel.
+     * 
+     * @param encoderChannel roboRIO analog channel that the steer encoder is connected to.
+     * @return the builder
+     */
+    public MkSwerveModuleBuilder withSteerEncoderAnalogChannel(int encoderChannel) {
+        this.steerEncoderType = EncoderType.Analog;
+        this.steerEncoderPort = encoderChannel;
+        return this;
     }
 
     /**
@@ -253,31 +265,40 @@ public class MkSwerveModuleBuilder {
             throw new RuntimeException("Steer Encoder Port should be greater than 0!");
         }
 
-        SwerveModuleFactory<Integer, SteerConfiguration<CanCoderAbsoluteConfiguration>> factory = new SwerveModuleFactory<>(
+        SwerveModuleFactory<Integer, SteerConfiguration> factory = new SwerveModuleFactory<>(
                 mechConfig, 
                 driveFactory, 
                 steerFactory
         );
 
-        SteerConfiguration<CanCoderAbsoluteConfiguration> steerConfig;
+        AbsoluteEncoderConfiguration<?> encoderConfig;
+
+        if (steerEncoderType == EncoderType.Analog) {
+            encoderConfig = new AnalogAbsoluteEncoderConfiguration(
+                steerEncoderPort,
+                steerOffset
+            );
+        } else if (steerEncoderType == EncoderType.CANCoder) {
+            encoderConfig = new CanCoderAbsoluteConfiguration(
+                steerEncoderPort,
+                steerOffset,
+                steerEncoderCanbus
+            );
+        } else {
+            throw new RuntimeException("Steer Encoder Type should not be null!");
+        }
+
+        SteerConfiguration steerConfig;
 
         if (steerMotorType == MotorType.FALCON) {
-            steerConfig = new SteerConfiguration<>(
-                    steerMotorPort, 
-                    new CanCoderAbsoluteConfiguration(
-                            steerEncoderPort, 
-                            steerOffset,
-                            steerEncoderCanbus
-                    )
+            steerConfig = new SteerConfiguration(
+                steerMotorPort, 
+                encoderConfig
             );
         } else if (steerMotorType == MotorType.NEO) {
-            steerConfig = new SteerConfiguration<>(
+            steerConfig = new SteerConfiguration(
                     steerMotorPort, 
-                    new CanCoderAbsoluteConfiguration(
-                            steerEncoderPort, 
-                            steerOffset,
-                            steerEncoderCanbus
-                    )
+                    encoderConfig
             );
         } else {
             throw new RuntimeException("Steer Motor Type should not be null!");

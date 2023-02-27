@@ -10,12 +10,6 @@ import com.swervedrivespecialties.swervelib.AbsoluteEncoderFactory;
 
 public class CanCoderFactoryBuilder {
     private Direction direction = Direction.COUNTER_CLOCKWISE;
-    private int periodMilliseconds = 10;
-
-    public CanCoderFactoryBuilder withReadingUpdatePeriod(int periodMilliseconds) {
-        this.periodMilliseconds = periodMilliseconds;
-        return this;
-    }
 
     public CanCoderFactoryBuilder withDirection(Direction direction) {
         this.direction = direction;
@@ -33,19 +27,20 @@ public class CanCoderFactoryBuilder {
             WPI_CANCoder encoder = new WPI_CANCoder(configuration.getId(), configuration.getCanbus());
             CtreUtils.checkCtreError(encoder.configAllSettings(config, 250), "Failed to configure CANCoder");
 
-            CtreUtils.checkCtreError(encoder.setStatusFramePeriod(CANCoderStatusFrame.SensorData, periodMilliseconds, 250), "Failed to configure CANCoder update rate");
+            CtreUtils.checkCtreError(encoder.setStatusFramePeriod(CANCoderStatusFrame.SensorData, configuration.getReadingUpdatePeriodMS(), 250), "Failed to configure CANCoder update rate");
 
-            return new EncoderImplementation(encoder);
+            return new EncoderImplementation(encoder, configuration.getAttempts());
         };
     }
 
     private static class EncoderImplementation implements AbsoluteEncoder {
-        private final int ATTEMPTS = 3; // TODO: Allow changing number of tries for getting correct position
+        private final int attempts; 
 
         private final WPI_CANCoder encoder;
 
-        private EncoderImplementation(WPI_CANCoder encoder) {
+        private EncoderImplementation(WPI_CANCoder encoder, int attempts) {
             this.encoder = encoder;
+            this.attempts = attempts;
         }
 
         @Override
@@ -54,7 +49,7 @@ public class CanCoderFactoryBuilder {
 
             ErrorCode code = encoder.getLastError();
 
-            for (int i = 0; i < ATTEMPTS; i++) {
+            for (int i = 0; i < attempts; i++) {
                 if (code == ErrorCode.OK) break;
                 try {
                     Thread.sleep(10);
@@ -63,7 +58,7 @@ public class CanCoderFactoryBuilder {
                 code = encoder.getLastError();
             }
 
-            CtreUtils.checkCtreError(code, "Failed to retrieve CANcoder "+encoder.getDeviceID()+" absolute position after "+ATTEMPTS+" tries");
+            CtreUtils.checkCtreError(code, "Failed to retrieve CANcoder "+encoder.getDeviceID()+" absolute position after "+attempts+" tries");
 
             angle %= 2.0 * Math.PI;
             if (angle < 0.0) {

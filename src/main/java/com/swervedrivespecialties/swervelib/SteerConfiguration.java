@@ -2,11 +2,11 @@ package com.swervedrivespecialties.swervelib;
 
 import java.util.Objects;
 
-public class SteerConfiguration<EncoderConfiguration> {
+public class SteerConfiguration {
     private final int motorPort;
-    private final EncoderConfiguration encoderConfiguration;
+    private final AbsoluteEncoderConfiguration<?> encoderConfiguration;
 
-    public SteerConfiguration(int motorPort, EncoderConfiguration encoderConfiguration) {
+    public SteerConfiguration(int motorPort, AbsoluteEncoderConfiguration<?> encoderConfiguration) {
         this.motorPort = motorPort;
         this.encoderConfiguration = encoderConfiguration;
     }
@@ -15,7 +15,7 @@ public class SteerConfiguration<EncoderConfiguration> {
         return motorPort;
     }
 
-    public EncoderConfiguration getEncoderConfiguration() {
+    public AbsoluteEncoderConfiguration<?> getEncoderConfiguration() {
         return encoderConfiguration;
     }
 
@@ -23,7 +23,7 @@ public class SteerConfiguration<EncoderConfiguration> {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        SteerConfiguration<?> that = (SteerConfiguration<?>) o;
+        SteerConfiguration that = (SteerConfiguration) o;
         return getMotorPort() == that.getMotorPort() && getEncoderConfiguration().equals(that.getEncoderConfiguration());
     }
 

@@ -1,12 +1,19 @@
 package com.swervedrivespecialties.swervelib.ctre;
 
 import com.ctre.phoenix.sensors.SensorInitializationStrategy;
+import com.swervedrivespecialties.swervelib.AbsoluteEncoder;
+import com.swervedrivespecialties.swervelib.AbsoluteEncoderConfiguration;
 
-public class CanCoderAbsoluteConfiguration {
+public class CanCoderAbsoluteConfiguration implements AbsoluteEncoderConfiguration<CanCoderAbsoluteConfiguration> {
     private final int id;
     private final double offset;
     private final String canbus;
     private final SensorInitializationStrategy initStrategy;
+    private final int readingUpdatePeriodMS = 100;
+    /**
+     * Number of tries for getting correct position.
+     */
+    private final int attempts = 3; // TODO: Allow changing number of tries for getting correct position
 
     public CanCoderAbsoluteConfiguration(int id, double offset, String canbus, SensorInitializationStrategy initStrategy) {
         this.id = id;
@@ -35,7 +42,20 @@ public class CanCoderAbsoluteConfiguration {
         return canbus;
     }
 
+    public int getReadingUpdatePeriodMS() {
+        return readingUpdatePeriodMS;
+    }
+
+    public int getAttempts() {
+        return attempts;
+    }
+
     public SensorInitializationStrategy getInitStrategy() {
         return initStrategy;
+    }
+
+    @Override
+    public AbsoluteEncoder create() {
+        return new CanCoderFactoryBuilder().build().create(this);
     }
 }

@@ -49,15 +49,13 @@ public final class NeoSteerControllerFactoryBuilder {
         return Double.isFinite(currentLimit);
     }
 
-    public <T> SteerControllerFactory<ControllerImplementation, SteerConfiguration<T>> build(AbsoluteEncoderFactory<T> encoderFactory) {
-        return new FactoryImplementation<>(encoderFactory);
+    public SteerControllerFactory<ControllerImplementation, SteerConfiguration> build() {
+        return new FactoryImplementation();
     }
 
-    public class FactoryImplementation<T> implements SteerControllerFactory<ControllerImplementation, SteerConfiguration<T>> {
-        private final AbsoluteEncoderFactory<T> encoderFactory;
+    public class FactoryImplementation implements SteerControllerFactory<ControllerImplementation, SteerConfiguration> {
 
-        public FactoryImplementation(AbsoluteEncoderFactory<T> encoderFactory) {
-            this.encoderFactory = encoderFactory;
+        public FactoryImplementation() {
         }
 
         @Override
@@ -67,8 +65,8 @@ public final class NeoSteerControllerFactoryBuilder {
         }
 
         @Override
-        public ControllerImplementation create(SteerConfiguration<T> steerConfiguration, String _canbus, MechanicalConfiguration mechConfiguration) {
-            AbsoluteEncoder absoluteEncoder = encoderFactory.create(steerConfiguration.getEncoderConfiguration());
+        public ControllerImplementation create(SteerConfiguration steerConfiguration, String _canbus, MechanicalConfiguration mechConfiguration) {
+            AbsoluteEncoder absoluteEncoder = steerConfiguration.getEncoderConfiguration().create();
 
             CANSparkMax motor = new CANSparkMax(steerConfiguration.getMotorPort(), CANSparkMaxLowLevel.MotorType.kBrushless);
             checkNeoError(motor.setPeriodicFramePeriod(CANSparkMaxLowLevel.PeriodicFrame.kStatus0, 100), "Failed to set periodic status frame 0 rate");
