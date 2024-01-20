@@ -41,10 +41,5 @@ public interface SwerveModule {
         return new SwerveModulePosition(getDriveDistance(), Rotation2d.fromRadians(getSteerAngle()));
     }
 
-    /**
-     * Reset motor or encoder position to the absolute position. May take a little bit.
-     */
-    void resetToAbsolute();
-
     void set(double driveVoltage, double steerAngle);
 }
